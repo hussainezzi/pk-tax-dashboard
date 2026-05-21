@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PK Company — Tax Dashboard (Nov 2025 - May 2026)</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f0f2f5; color: #1a1a2e; padding: 20px; }
+.dashboard { max-width: 1400px; margin: 0 auto; }
+h1 { font-size: 24px; margin-bottom: 4px; }
+.subtitle { color: #666; margin-bottom: 24px; font-size: 14px; }
+
+/* Cards */
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
+.card { background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+.card .label { font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: #888; margin-bottom: 6px; }
+.card .value { font-size: 28px; font-weight: 700; }
+.card .value.positive { color: #22c55e; }
+.card .value.negative { color: #ef4444; }
+.card .sub { font-size: 12px; color: #999; margin-top: 4px; }
+
+/* Charts row */
+.charts { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+.chart-card { background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+.chart-card h3 { font-size: 14px; color: #888; margin-bottom: 16px; text-transform: uppercase; letter-spacing: 1px; }
+.chart-wrapper { position: relative; height: 300px; }
+
+/* Sections */
+.section { background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); margin-bottom: 24px; }
+.section h3 { font-size: 16px; margin-bottom: 16px; color: #333; display: flex; align-items: center; gap: 8px; }
+.section h3 .count { background: #e5e7eb; border-radius: 999px; padding: 2px 10px; font-size: 12px; color: #666; }
+
+/* Tables */
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th { text-align: left; padding: 10px 12px; background: #f9fafb; border-bottom: 2px solid #e5e7eb; color: #555; font-weight: 600; white-space: nowrap; }
+td { padding: 10px 12px; border-bottom: 1px solid #f0f0f0; }
+tr:hover td { background: #fafafa; }
+.text-right { text-align: right; }
+.text-center { text-align: center; }
+.badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; }
+.badge-sale { background: #dbeafe; color: #1d4ed8; }
+.badge-credit { background: #fce7f3; color: #be185d; }
+.badge-bill { background: #d1fae5; color: #059669; }
+.badge-debit { background: #fef3c7; color: #b45309; }
+.amount { font-variant-numeric: tabular-nums; }
+.amount-negative { color: #ef4444; }
+.amount-positive { color: #22c55e; }
+
+/* Tax breakdown inline */
+.tax-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+.tax-tag { display: inline-block; padding: 1px 6px; border-radius: 4px; font-size: 11px; font-weight: 500; }
+.tax-tag.sales-tax { background: #dbeafe; color: #1e40af; }
+.tax-tag.wh-tax { background: #fce7f3; color: #9d174d; }
+
+/* Responsive */
+@media (max-width: 900px) { .charts { grid-template-columns: 1fr; } }
+@media (max-width: 600px) { .cards { grid-template-columns: 1fr 1fr; } }
+</style>
+</head>
+<body>
+<div class="dashboard" id="app">
+  <h1>📊 PK Company — Tax Dashboard</h1>
+  <div class="subtitle">Period: 21 Nov 2025 — 21 May 2026</div>
+
+  <!-- KPI Cards -->
+  <div class="cards" id="kpiCards">
+    <div class="card">
+      <div class="label">Total Sales (Taxable)</div>
+      <div class="value" id="totalTaxableSales">—</div>
+    </div>
+    <div class="card">
+      <div class="label">Total Sales (Tax-Exempt)</div>
+      <div class="value" id="totalExemptSales">—</div>
+    </div>
+    <div class="card">
+      <div class="label">Sales Tax Collected</div>
+      <div class="value" id="totalSalesTax">—</div>
+    </div>
+    <div class="card">
+      <div class="label">Input Tax (Purchases)</div>
+      <div class="value" id="totalInputTax">—</div>
+    </div>
+    <div class="card">
+      <div class="label">Net Tax Payable</div>
+      <div class="value" id="netTaxPayable">—</div>
+    </div>
+    <div class="card">
+      <div class="label">Net Profit (This Period)</div>
+      <div class="value" id="netProfit">—</div>
+    </div>
+  </div>
+
+  <!-- Charts -->
+  <div class="charts">
+    <div class="chart-card">
+      <h3>Tax by Rate</h3>
+      <div class="chart-wrapper"><canvas id="taxRateChart"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <h3>Tax Collected vs Input</h3>
+      <div class="chart-wrapper"><canvas id="taxCompositionChart"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Monthly Trend -->
+  <div class="section">
+    <h3>📈 Monthly Tax Trend</h3>
+    <div style="position:relative;height:250px;"><canvas id="monthlyTrendChart"></canvas></div>
+  </div>
+
+  <!-- Invoice Table -->
+  <div class="section">
+    <h3>📄 Per-Invoice Breakdown <span class="count" id="invCount">0 invoices</span></h3>
+    <div style="overflow-x:auto;">
+      <table>
+        <thead>
+          <tr>
+            <th>Invoice</th>
+            <th>Date</th>
+            <th>Type</th>
+            <th>Partner</th>
+            <th class="text-right">Untaxed</th>
+            <th class="text-right">Tax</th>
+            <th class="text-right">Total</th>
+            <th>Tax Breakdown</th>
+          </tr>
+        </thead>
+        <tbody id="invoiceTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- P&L Summary -->
+  <div class="section">
+    <h3>📋 P&L Summary (This Period)</h3>
+    <div style="overflow-x:auto;">
+      <table>
+        <thead>
+          <tr><th>Account</th><th class="text-right">Debit</th><th class="text-right">Credit</th><th class="text-right">Net</th></tr>
+        </thead>
+        <tbody id="plTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+const DATA = {
+  period: { from: '2025-11-21', to: '2026-05-21' },
+  invoices: [
+    {name:"INV/2026/00011",date:"2026-05-11",type:"out_invoice",partner:"Anthony",untaxed:50000,tax:9000,total:59000,tax_lines:[{name:"18% S",rate:18,type:"sale",balance:-9000}]},
+    {name:"INV/2026/00010",date:"2026-05-10",type:"out_invoice",partner:"Mr A",untaxed:900000,tax:153000,total:1053000,tax_lines:[{name:"17% S",rate:17,type:"sale",balance:-153000}]},
+    {name:"INV/2026/00009",date:"2026-05-09",type:"out_invoice",partner:"Hozefa",untaxed:2000,tax:340,total:2340,tax_lines:[{name:"17% S",rate:17,type:"sale",balance:-340}]},
+    {name:"INV/2026/00008",date:"2026-05-07",type:"out_invoice",partner:"Hozefa",untaxed:202,tax:34.34,total:236.34,tax_lines:[{name:"17%",rate:17,type:"sale",balance:-34.34}]},
+    {name:"RBILL/2026/05/0001",date:"2026-05-06",type:"in_refund",partner:"Azure Interior",untaxed:30,tax:0,total:30,tax_lines:[]},
+    {name:"BILL/2026/05/0004",date:"2026-05-06",type:"in_invoice",partner:"Azure Interior",untaxed:30,tax:0,total:30,tax_lines:[]},
+    {name:"BILL/2026/05/0003",date:"2026-05-06",type:"in_invoice",partner:"Islamabad Vendor",untaxed:3000,tax:270,total:3270,tax_lines:[{name:"17% S",rate:17,type:"sale",balance:170},{name:"10% S",rate:10,type:"sale",balance:200},{name:"WH TAX -5%",rate:-5,type:"sale",balance:-100}]},
+    {name:"BILL/2026/05/0002",date:"2026-05-06",type:"in_invoice",partner:"Islamabad Vendor",untaxed:10000,tax:1280,total:11280,tax_lines:[{name:"17%",rate:17,type:"sale",balance:680},{name:"10% S",rate:10,type:"sale",balance:600}]},
+    {name:"BILL/2026/05/0001",date:"2026-05-06",type:"in_invoice",partner:"Islamabad Vendor",untaxed:3000,tax:330,total:3330,tax_lines:[{name:"15% S",rate:15,type:"sale",balance:150},{name:"10% S",rate:10,type:"sale",balance:200},{name:"WH TAX -1%",rate:-1,type:"sale",balance:-20}]},
+    {name:"RINV/2026/00006",date:"2026-05-05",type:"out_refund",partner:"Acme Corporation",untaxed:41750,tax:0,total:41750,tax_lines:[]},
+    {name:"RINV/2026/00001",date:"2026-05-05",type:"out_refund",partner:"Punjab Customer",untaxed:82400,tax:8120,total:90520,tax_lines:[{name:"10% S",rate:10,type:"sale",balance:8120},{name:"WH TAX -5%",rate:-5,type:"sale",balance:-60},{name:"5% S",rate:5,type:"sale",balance:60}]},
+    {name:"INV/2026/00001",date:"2026-05-05",type:"out_invoice",partner:"Punjab Customer",untaxed:82400,tax:8252,total:90652,tax_lines:[{name:"10% S",rate:10,type:"sale",balance:-8000},{name:"17% S",rate:17,type:"sale",balance:-204},{name:"WH TAX -1%",rate:-1,type:"sale",balance:12},{name:"5% S",rate:5,type:"sale",balance:-60}]},
+    {name:"RINV/2026/00007",date:"2026-05-04",type:"out_refund",partner:"Acme Corporation",untaxed:19250,tax:0,total:19250,tax_lines:[]},
+    {name:"RINV/2026/00002",date:"2026-05-04",type:"out_refund",partner:"Gemini Furniture",untaxed:8000,tax:0,total:8000,tax_lines:[]},
+    {name:"INV/2026/00005",date:"2026-05-04",type:"out_invoice",partner:"Acme Corporation",untaxed:41750,tax:0,total:41750,tax_lines:[]},
+    {name:"INV/2026/00002",date:"2026-05-04",type:"out_invoice",partner:"Punjab Customer",untaxed:8900,tax:845,total:9745,tax_lines:[{name:"10% S",rate:10,type:"sale",balance:-800},{name:"5% S",rate:5,type:"sale",balance:-45}]},
+    {name:"INV/2026/00006",date:"2026-05-03",type:"out_invoice",partner:"Acme Corporation",untaxed:19250,tax:0,total:19250,tax_lines:[]},
+    {name:"INV/2026/00003",date:"2026-05-03",type:"out_invoice",partner:"Gemini Furniture",untaxed:8000,tax:0,total:8000,tax_lines:[]},
+    {name:"INV/2026/00004",date:"2026-05-01",type:"out_invoice",partner:"Azure Interior",untaxed:31750,tax:0,total:31750,tax_lines:[]},
+    {name:"RINV/2026/00005",date:"2026-04-26",type:"out_refund",partner:"Acme Corporation",untaxed:31750,tax:0,total:31750,tax_lines:[]},
+    {name:"INV/2026/00007",date:"2026-04-21",type:"out_invoice",partner:"Acme Corporation",untaxed:31750,tax:0,total:31750,tax_lines:[]},
+    {name:"RINV/2026/00004",date:"2026-04-03",type:"out_refund",partner:"Azure Interior",untaxed:20000,tax:0,total:20000,tax_lines:[]},
+    {name:"RINV/2026/00003",date:"2026-04-02",type:"out_refund",partner:"Azure Interior",untaxed:11750,tax:0,total:11750,tax_lines:[]}
+  ],
+  pl: {
+    97:{name:"Sales Income",type:"income",debit:214900,credit:1187502,net:-972602},
+    102:{name:"Purchases",type:"expense",debit:16030,credit:30,net:16000}
+  }
+};
+
+function fmt(n) { 
+  if (n === 0) return 'Rs. 0';
+  const abs = Math.abs(n).toLocaleString('en-IN', {maximumFractionDigits:2, minimumFractionDigits:2});
+  return (n < 0 ? '-Rs. ' : 'Rs. ') + abs.replace(/^-/, '');
+}
+
+function fmtShort(n) {
+  const abs = Math.abs(n);
+  if (abs >= 10000000) return (n<0?'-':'')+'Rs. '+(abs/10000000).toFixed(2)+' Cr';
+  if (abs >= 100000) return (n<0?'-':'')+'Rs. '+(abs/100000).toFixed(2)+' L';
+  return fmt(n);
+}
+
+// Type badges
+function typeBadge(t) {
+  const m = {
+    'out_invoice': '<span class="badge badge-sale">Sale</span>',
+    'out_refund': '<span class="badge badge-credit">Credit Note</span>',
+    'in_invoice': '<span class="badge badge-bill">Bill</span>',
+    'in_refund': '<span class="badge badge-debit">Debit Note</span>'
+  };
+  return m[t] || t;
+}
+
+// Build KPI
+function buildKPI() {
+  const invoices = DATA.invoices;
+  let taxableSales = 0, exemptSales = 0, salesTax = 0, inputTax = 0;
+  
+  invoices.forEach(inv => {
+    const isSale = inv.type === 'out_invoice' || inv.type === 'out_refund';
+    const isPurchase = inv.type === 'in_invoice' || inv.type === 'in_refund';
+    const isCredit = inv.type === 'out_refund';
+    
+    let taxOnThis = 0;
+    let whTaxOnThis = 0;
+    inv.tax_lines.forEach(tl => {
+      if (tl.name.startsWith('WH TAX')) whTaxOnThis += Math.abs(tl.balance);
+      else taxOnThis += tl.balance;
+    });
+    
+    if (isSale) {
+      if (inv.tax === 0) exemptSales += inv.untaxed;
+      else taxableSales += inv.untaxed;
+      salesTax += taxOnThis;
+    } else if (isPurchase) {
+      inputTax += taxOnThis;
+    }
+  });
+  
+  const netTax = Math.abs(salesTax) - Math.abs(inputTax);
+  
+  document.getElementById('totalTaxableSales').textContent = fmtShort(taxableSales);
+  document.getElementById('totalExemptSales').textContent = fmtShort(exemptSales);
+  document.getElementById('totalSalesTax').textContent = fmtShort(Math.abs(salesTax));
+  document.getElementById('totalInputTax').textContent = fmtShort(Math.abs(inputTax));
+  
+  const netEl = document.getElementById('netTaxPayable');
+  netEl.textContent = fmtShort(netTax);
+  if (salesTax < 0) {
+    netEl.style.color = netTax > 0 ? '#ef4444' : '#22c55e';
+  }
+  
+  // Net profit
+  let totalIncome = 0, totalExpense = 0;
+  Object.values(DATA.pl).forEach(a => {
+    if (a.type === 'income' || a.type === 'income_other') totalIncome += Math.abs(a.net);
+    else totalExpense += Math.abs(a.net);
+  });
+  const profit = totalIncome - totalExpense;
+  const pEl = document.getElementById('netProfit');
+  pEl.textContent = fmtShort(profit);
+  pEl.className = 'value ' + (profit >= 0 ? 'positive' : 'negative');
+}
+
+// Tax Rate Chart
+let taxRateChart = null;
+function buildTaxRateChart() {
+  const ctx = document.getElementById('taxRateChart').getContext('2d');
+  const taxByRate = {};
+  
+  DATA.invoices.forEach(inv => {
+    inv.tax_lines.forEach(tl => {
+      if (tl.name.startsWith('WH TAX')) return;
+      const key = tl.name;
+      if (!taxByRate[key]) taxByRate[key] = 0;
+      taxByRate[key] += Math.abs(tl.balance);
+    });
+  });
+  
+  const labels = Object.keys(taxByRate);
+  const values = Object.values(taxByRate);
+  const colors = ['#3b82f6','#8b5cf6','#ec4899','#f59e0b','#10b981','#06b6d4','#84cc16'];
+  
+  if (taxRateChart) taxRateChart.destroy();
+  taxRateChart = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: labels,
+      datasets: [{ data: values, backgroundColor: colors.slice(0, labels.length), borderWidth: 0 }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'right', labels: { boxWidth: 12, padding: 12, font: { size: 11 } } },
+        tooltip: { callbacks: { label: ctx => ctx.label + ': Rs. ' + ctx.parsed.toLocaleString('en-IN') } }
+      }
+    }
+  });
+}
+
+// Tax Composition Chart
+let taxCompChart = null;
+function buildTaxCompChart() {
+  const ctx = document.getElementById('taxCompositionChart').getContext('2d');
+  
+  let outputTax = 0, inputTax = 0, whCollected = 0, whWithheld = 0;
+  
+  DATA.invoices.forEach(inv => {
+    inv.tax_lines.forEach(tl => {
+      const abs = Math.abs(tl.balance);
+      const isSaleType = inv.type === 'out_invoice' || inv.type === 'out_refund';
+      const isWH = tl.name.startsWith('WH TAX');
+      
+      if (isWH) {
+        if (isSaleType) whCollected += abs;
+        else whWithheld += abs;
+      } else {
+        if (isSaleType) outputTax += abs;
+        else inputTax += abs;
+      }
+    });
+  });
+  
+  if (taxCompChart) taxCompChart.destroy();
+  taxCompChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: ['Sales Tax Collected', 'Input Tax (Purchases)', 'WH Tax Deducted', 'Net Payable'],
+      datasets: [{
+        data: [outputTax, inputTax, whWithheld, Math.max(0, outputTax - inputTax)],
+        backgroundColor: ['#3b82f6', '#10b981', '#8b5cf6', '#ef4444'],
+        borderRadius: 6
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: ctx => 'Rs. ' + ctx.parsed.y.toLocaleString('en-IN') } }
+      },
+      scales: {
+        y: { beginAtZero: true, grid: { color: '#f0f0f0' }, ticks: { callback: v => 'Rs.'+(v/1000).toFixed(0)+'k' } },
+        x: { grid: { display: false } }
+      }
+    }
+  });
+}
+
+// Monthly Trend
+let monthlyChart = null;
+function buildMonthlyChart() {
+  const ctx = document.getElementById('monthlyTrendChart').getContext('2d');
+  
+  // Aggregate by month
+  const monthly = {};
+  DATA.invoices.forEach(inv => {
+    const month = inv.date.substring(0, 7); // 2026-05
+    if (!monthly[month]) monthly[month] = { sales: 0, purchases: 0, tax: 0, count: 0 };
+    const isSale = inv.type.startsWith('out');
+    if (inv.tax !== 0) {
+      if (isSale) monthly[month].sales += inv.untaxed;
+      else monthly[month].purchases += inv.untaxed;
+    }
+    monthly[month].tax += inv.tax;
+    monthly[month].count++;
+  });
+  
+  const sortedMonths = Object.keys(monthly).sort();
+  const monthLabels = sortedMonths.map(m => {
+    const d = new Date(m+'-01');
+    return d.toLocaleString('default', {month:'short', year:'2-digit'});
+  });
+  
+  if (monthlyChart) monthlyChart.destroy();
+  monthlyChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: monthLabels,
+      datasets: [
+        {
+          label: 'Taxable Sales',
+          data: sortedMonths.map(m => monthly[m].sales),
+          backgroundColor: '#3b82f6',
+          borderRadius: 4
+        },
+        {
+          label: 'Purchases',
+          data: sortedMonths.map(m => monthly[m].purchases),
+          backgroundColor: '#10b981',
+          borderRadius: 4
+        }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'top', labels: { boxWidth: 12, font: { size: 11 } } },
+        tooltip: { callbacks: { label: ctx => ctx.dataset.label + ': Rs. ' + ctx.parsed.y.toLocaleString('en-IN') } }
+      },
+      scales: {
+        y: { beginAtZero: true, grid: { color: '#f0f0f0' }, ticks: { callback: v => 'Rs.'+(v/1000).toFixed(0)+'k' } },
+        x: { grid: { display: false } }
+      }
+    }
+  });
+}
+
+// Invoice Table
+function buildInvoiceTable() {
+  const tbody = document.getElementById('invoiceTableBody');
+  const sorted = [...DATA.invoices].sort((a,b) => b.date.localeCompare(a.date) || b.name.localeCompare(a.name));
+  document.getElementById('invCount').textContent = sorted.length + ' invoices';
+  
+  sorted.forEach(inv => {
+    const tr = document.createElement('tr');
+    
+    // Tax tags
+    let taxTags = '';
+    inv.tax_lines.forEach(tl => {
+      const cls = tl.name.startsWith('WH TAX') ? 'wh-tax' : 'sales-tax';
+      const bal = Math.abs(tl.balance).toLocaleString('en-IN', {maximumFractionDigits:2});
+      taxTags += `<span class="tax-tag ${cls}">${tl.name}: Rs.${bal}</span> `;
+    });
+    if (!taxTags) taxTags = '<span style="color:#999;font-size:11px;">Tax-exempt</span>';
+    
+    // Amount formatting
+    const untaxedCls = inv.untaxed !== 0 && inv.type === 'out_refund' ? 'amount-negative' : '';
+    const taxCls = inv.tax < 0 ? 'amount-negative' : inv.tax > 0 ? 'amount-positive' : '';
+    
+    tr.innerHTML = `
+      <td><strong>${inv.name}</strong></td>
+      <td>${inv.date}</td>
+      <td>${typeBadge(inv.type)}</td>
+      <td>${inv.partner}</td>
+      <td class="text-right amount ${untaxedCls}">${fmt(inv.untaxed)}</td>
+      <td class="text-right amount ${taxCls}">${fmt(inv.tax)}</td>
+      <td class="text-right amount">${fmt(inv.total)}</td>
+      <td><div class="tax-tags">${taxTags}</div></td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+// P&L Table
+function buildPLTable() {
+  const tbody = document.getElementById('plTableBody');
+  let totalIncome = 0, totalExpense = 0;
+  
+  Object.values(DATA.pl).sort((a,b) => a.type.localeCompare(b.type) || a.name.localeCompare(b.name)).forEach(a => {
+    const tr = document.createElement('tr');
+    const absNet = Math.abs(a.net);
+    const cls = a.type === 'income' || a.type === 'income_other' ? 'amount-positive' : 'amount-negative';
+    tr.innerHTML = `
+      <td><strong>${a.name}</strong> <span style="font-size:11px;color:#999;">(${a.type})</span></td>
+      <td class="text-right amount">${fmt(a.debit)}</td>
+      <td class="text-right amount">${fmt(a.credit)}</td>
+      <td class="text-right amount ${cls}">${a.type.startsWith('income') ? fmt(absNet) : fmt(a.net)}</td>
+    `;
+    tbody.appendChild(tr);
+    
+    if (a.type.startsWith('income')) totalIncome += absNet;
+    else totalExpense += absNet;
+  });
+  
+  const profit = totalIncome - totalExpense;
+  const tr = document.createElement('tr');
+  tr.style.background = '#f9fafb';
+  tr.style.fontWeight = '700';
+  tr.innerHTML = `
+    <td><strong>NET ${profit >= 0 ? 'PROFIT' : 'LOSS'}</strong></td>
+    <td></td><td></td>
+    <td class="text-right amount ${profit >= 0 ? 'amount-positive' : 'amount-negative'}">${fmt(profit)}</td>
+  `;
+  tbody.appendChild(tr);
+}
+
+// Init
+buildKPI();
+buildTaxRateChart();
+buildTaxCompChart();
+buildMonthlyChart();
+buildInvoiceTable();
+buildPLTable();
+</script>
+</body>
+</html>
