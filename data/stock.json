@@ -1,0 +1,66 @@
+{
+  "totalItems": 25,
+  "topProducts": [
+    {
+      "name": "Large Cabinet",
+      "qty": 230
+    },
+    {
+      "name": "Drawer",
+      "qty": 183
+    },
+    {
+      "name": "Cable Management Box",
+      "qty": 90
+    },
+    {
+      "name": "Customizable Desk",
+      "qty": 70
+    },
+    {
+      "name": "Customizable Desk",
+      "qty": 65
+    },
+    {
+      "name": "Desk Combination",
+      "qty": 60
+    },
+    {
+      "name": "Customizable Desk",
+      "qty": 55
+    },
+    {
+      "name": "Customizable Desk",
+      "qty": 50
+    },
+    {
+      "name": "Wood Panel",
+      "qty": 50
+    },
+    {
+      "name": "Customizable Desk",
+      "qty": 45
+    },
+    {
+      "name": "Drawer Black",
+      "qty": 45
+    },
+    {
+      "name": "Drawer Case Black",
+      "qty": 45
+    },
+    {
+      "name": "Cabinet with Doors",
+      "qty": 33
+    },
+    {
+      "name": "Conference Chair",
+      "qty": 30
+    },
+    {
+      "name": "Wear Layer",
+      "qty": 30
+    }
+  ],
+  "lastUpdated": "2026-06-06T01:59:38.547939"
+}
